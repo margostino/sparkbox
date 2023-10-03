@@ -21,24 +21,35 @@ udf_pos_schema = StructType([
 
 def call_pos_api(data):
     json_data = json.loads(data)
-    name = json_data["Employee NAME"]
-    print(f"SARLANGA: {name}")
+    name = json_data["name"]
+    print(f"Name: {name}")
     return {"status": "ok", "request": "req", "response": "res"}
 
 
-data = [["1", "sravan", "company 1", 10],
-        ["2", "ojaswi", "company 2", 20],
-        ["3", "bobby", "company 3", 30],
-        ["4", "rohith", "company 2", 40],
-        ["5", "gnanesh", "company 1", 50]]
+def print_result(row):
+    print(f"Row: {row}")
 
-columns = ['Employee ID', 'Employee NAME',
-           'Company Name', 'Random Number']
+
+data = [["1", "sravan", "apple", 10],
+        ["2", "ojaswi", "google", 20],
+        ["3", "bobby", "microsoft", 30],
+        ["4", "rohith", "google", 40],
+        ["5", "gnanesh", "facebook", 50]]
+
+columns = ['id', 'name', 'company', 'random']
 
 dataframe = spark.createDataFrame(data, columns)
+dataframe.filter(dataframe['company'] == 'google').show()
+print()
+
 udf_call_pos_api = udf(call_pos_api, udf_pos_schema).asNondeterministic()
 dataframe.show()
 dataframe = dataframe.select(to_json(struct([dataframe[x] for x in dataframe.columns])).alias("value"))
 dataframe = dataframe.withColumn("result", udf_call_pos_api(col("value"))).cache()
 dataframe.show()
+
+# x = dataframe.first()
+# x.asDict()['result'].asDict()
+
+dataframe.select("result").foreach(lambda result: print_result(to_json(result)))
 print()
